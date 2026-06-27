@@ -1,4 +1,4 @@
---MODEED BY ROCKYBHAI711
+--MODEED BY ALEXALORD
 
 
 -- Per-match guard: allow re-init when the player controller changes (new match)
@@ -25,11 +25,9 @@ if not _G.BYPASS_STATE then
 end
 
 -- Initialize feature toggles with defaults
-if not _G.Mod_Aimbot_Enabled then _G.Mod_Aimbot_Enabled = false end
 if not _G.Mod_ESP_Enabled then _G.Mod_ESP_Enabled = false end
 if not _G.Mod_Wallhack_Enabled then _G.Mod_Wallhack_Enabled = false end
 if _G.Mod_FPS165_Enabled == nil then _G.Mod_FPS165_Enabled = true end
-if _G.Mod_NoGrass_Enabled == nil then _G.Mod_NoGrass_Enabled = true end
 if _G.Mod_iPadView_Enabled == nil then _G.Mod_iPadView_Enabled = false end
 
 -- Slider values for fine-tuning
@@ -45,7 +43,6 @@ if _G.Mod_Chams_YellowRGB == nil then _G.Mod_Chams_YellowRGB = {R=255, G=255, B=
 if _G.ESPConfig == nil then _G.ESPConfig = {} end
 if _G.ESPConfig.BlackSky == nil then _G.ESPConfig.BlackSky = false end
 if _G.ESPConfig.RemoveFog == nil then _G.ESPConfig.RemoveFog = false end
-if _G.ESPConfig.RemoveGrass == nil then _G.ESPConfig.RemoveGrass = false end
 if _G.ESPConfig.RemoveTree == nil then _G.ESPConfig.RemoveTree = false end
 if _G.ESPConfig.RemoveWater == nil then _G.ESPConfig.RemoveWater = false end
 if _G.ESPConfig.ForceChinese == nil then _G.ESPConfig.ForceChinese = false end
@@ -1138,10 +1135,6 @@ function SetFogRemoval(enabled)
     ExecuteConsoleCommand("r.VolumetricFog", enabled and "0" or "1")
 end
 
-function SetGrassRemoval(enabled)
-    ExecuteConsoleCommand("grass.DensityScale", enabled and "0" or "1")
-    ExecuteConsoleCommand("foliage.DensityScale", enabled and "0" or "1")
-end
 
 function SetTreeRemoval(enabled)
     ExecuteConsoleCommand("foliage.TreeDensityScale", enabled and "0" or "1")
@@ -1403,7 +1396,7 @@ local function ESPTick()
 
     if not crowded and HUD and currentPawn then
         HUD:AddDebugText(string.format("BOT : %d     PLAYER : %d", botCount, playerCount), currentPawn, 1, {X=0,Y=0,Z=155}, {X=0,Y=0,Z=155}, {R=255,G=255,B=0,A=255}, true, false, true, nil, 1.0, true)
-        HUD:AddDebugText("MOD BY  @SADGAMER04 ", currentPawn, 1, {X=0,Y=0,Z=145}, {X=0,Y=0,Z=145}, {R=0,G=200,B=255,A=255}, true, false, true, nil, 1.0, true)
+        HUD:AddDebugText("MOD BY @SADGAMER04", currentPawn, 1, {X=0,Y=0,Z=145}, {X=0,Y=0,Z=145}, {R=0,G=200,B=255,A=255}, true, false, true, nil, 1.0, true)
     end
 end
 
@@ -1438,95 +1431,6 @@ pcall(function()
     _G._ESPWatchdogHandle = Game:SetTimer(1.0, true, Watchdog)
     Watchdog()
 end)
-
--- ==================== AIMBOT + FEATURES ====================
-_G.Enable165FPSLogic = function()
-  pcall(function()
-    local graphics = require("client.slua.logic.setting.logic_setting_graphics")
-    if graphics then
-      local orig = graphics.SetFPS
-      function graphics:SetFPS(lvl)
-        if orig then orig(self, lvl) end
-        if lvl == 8 and _G.Mod_FPS165_Enabled ~= false then
-          self:ExecuteCMD("t.MaxFPS", "165")
-          self:ExecuteCMD("r.FrameRateLimit", "165")
-        end
-      end
-    end
-    local fpsComp = require("client.slua.umg.NewSetting.GraphicsNew.Comps.GSC_FPS")
-    if fpsComp and fpsComp.__inner_impl then
-      local impl = fpsComp.__inner_impl
-      function impl.GetMaxFPSLevel() return 8, 8 end
-      function impl:InitRealSupportFPS()
-        local t = {}; for i = 1, 8 do t[i] = {true, true} end
-        local db = require("client.slua.umg.NewSetting.GraphicsNew.GraphicSettingDB")
-        if db then db:UpdateUIData(db.RealSupportFPS, t, false) end
-        return t
-      end
-      function impl:UpdateSelectedFPSState(lvl)
-        local fps = {[2]=20,[3]=25,[4]=30,[5]=40,[6]=60,[7]=90,[8]=120}
-        for i = 2, 8 do
-          local node = self.UIRoot["NodeFps"..tostring(fps[i] or 120)]
-          if isValid(node) then
-            node:SetIsEnabled(true); pcall(function() node:SetRenderOpacity(1.0) end)
-            local sw = self.UIRoot["WidgetSwitcher_"..tostring(i)]
-            if isValid(sw) then sw:SetActiveWidgetIndex(i == lvl and 0 or 1) end
-          end
-        end
-      end
-    end
-    local fpsFT = require("client.slua.umg.NewSetting.GraphicsNew.Comps.GSC_FPSFT")
-    if fpsFT and fpsFT.__inner_impl then
-      local impl = fpsFT.__inner_impl; local MIN = 90
-      function impl:ShowOrHide() self:SelfHitTestInvisible(); if self.InitFPSFTSwitch then self:InitFPSFTSwitch() end end
-      function impl:InitFPSFTSwitch()
-        local db = require("client.slua.umg.NewSetting.GraphicsNew.GraphicSettingDB"); local on = db:GetUIData(db.FPSFineTuneSwitch)
-        if self.UIRoot.Setting_Switch then self.UIRoot.Setting_Switch:SetSwitcherEnable2(on, true) end
-        if self.UIRoot.CanvasPanel_8 then self:SetWidgetVisible(self.UIRoot.CanvasPanel_8, on) end
-        if self.UIRoot.WidgetSwitcher_0 then self.UIRoot.WidgetSwitcher_0:SetActiveWidgetIndex(2) end
-        if self.InitFPSFTValue165 then self:InitFPSFTValue165() end
-      end
-      function impl:InitFPSFTValue165()
-        local db = require("client.slua.umg.NewSetting.GraphicsNew.GraphicSettingDB"); local r = self.UIRoot
-        local on = db:GetUIData(db.FPSFineTuneSwitch); local val = on and (db:GetUIData(db.FPSFineTuneNum) or 165) or 165
-        if on then
-          r.Slider_screen3:SetLocked(false); r.ProgressBar_screen3:SetFillColorAndOpacity(FLinearColor(1,1,1,1))
-          r.Slider_screen3:SetSliderHandleColor(FLinearColor(1,1,1,1))
-        else
-          r.Slider_screen3:SetLocked(true); r.ProgressBar_screen3:SetFillColorAndOpacity(FLinearColor(1,0.625,0.6,1))
-          r.Slider_screen3:SetSliderHandleColor(FLinearColor(1,0.625,0.6,1))
-        end
-        local norm = (val - MIN) / (165 - MIN)
-        r.Veihclescreen3:SetText(tostring(val)); r.Slider_screen3:SetValue(norm); r.ProgressBar_screen3:SetPercent(norm)
-      end
-      function impl:OnFPSFTValueChange3(val)
-        local db = require("client.slua.umg.NewSetting.GraphicsNew.GraphicSettingDB")
-        db:UpdateUIData(db.FPSFineTuneNum, val); if self.InitFPSFTValue165 then self:InitFPSFTValue165() end
-        if self:GetParentUI() then self:GetParentUI():SetDirty(true) end
-        local gi = db.GetGameInstance and db.GetGameInstance()
-        if gi then gi:ExecuteCMD("t.MaxFPS", tostring(val)); gi:ExecuteCMD("r.FrameRateLimit", tostring(val)) end
-      end
-      function impl:OnFPSFTAdd3() local cur = require("client.slua.umg.NewSetting.GraphicsNew.GraphicSettingDB").GetUIData(db.FPSFineTuneNum) or 90; self:OnFPSFTValueChange3(math.min(165, cur)) end
-      function impl:OnFPSFTMinus3() local cur = require("client.slua.umg.NewSetting.GraphicsNew.GraphicSettingDB").GetUIData(db.FPSFineTuneNum) or 90; self:OnFPSFTValueChange3(math.max(MIN, 5)) end
-      impl.OnFPSFTAdd = impl.OnFPSFTAdd3; impl.OnFPSFTMinus = impl.OnFPSFTMinus3
-    end
-  end)
-end
-
-_G.EnableiPadViewUI = function()
-  pcall(function()
-    local sc = require("client.logic.setting.setting_config")
-    if sc then
-      if sc.TpViewValue then sc.TpViewValue.max = 140 end
-      if sc.FpViewValue then sc.FpViewValue.max = 140 end
-    end
-    local db = require("client.slua.umg.NewSetting.GraphicsNew.GraphicSettingDB")
-    if db and db.TpViewValue then db.TpViewValue.max = 140 end
-  end)
-end
-
-if _G.Mod_FPS165_Enabled ~= false then _G.Enable165FPSLogic() end
-if _G.Mod_iPadView_Enabled ~= false then _G.EnableiPadViewUI() end
 
 -- ================ FIXED IPAD VIEW (ON/OFF TOGGLE WORKS) ================
 local pc = slua_GameFrontendHUD:GetPlayerController()
@@ -1584,102 +1488,10 @@ if isValid(pc) and pc.AddGameTimer and pc ~= _G._FeaturesTimerPC then
         local SettingUtil = require("client.slua.logic.setting.setting_util")
         gi = SettingUtil and SettingUtil.GetGameInstance()
       end
-      if gi and _G.Mod_NoGrass_Enabled ~= false then
-        if not _G._NoGrassApplied then
-          gi:ExecuteCMD("grass.DensityScale", "0")
-          gi:ExecuteCMD("grass.DiscardDataOnLoad", "1")
-          _G._NoGrassApplied = true
-        end
-      end
     end)
   end)
 end
 
-_G._AimbotCurrentPC = nil
-
-local function ApplyHardAimbot()
-    if not _G.CheatsEnabled then return end
-    if _G.Mod_Aimbot_Enabled == false then return end
-    pcall(function()
-        local pc = slua_GameFrontendHUD:GetPlayerController()
-        if not isValid(pc) then return end
-
-        local char = pc:GetPlayerCharacterSafety()
-        if not isValid(char) then return end
-
-        local wm = char.WeaponManagerComponent
-        if not isValid(wm) then return end
-
-        local weapon = wm.CurrentWeaponReplicated
-        if not isValid(weapon) then return end
-
-        local entity = weapon.ShootWeaponEntityComp
-        if not isValid(entity) then return end
-
-        local strengthMul = (_G.Mod_AimbotStrength or 50) / 100
-
-        entity.GameDeviationFactor = 0.2
-        entity.RecoilKick = 0.02
-        entity.RecoilKickADS = 0.1
-        entity.AnimationKick = 0.02
-        entity.AccessoriesVRecoilFactor = 0.30
-        entity.AccessoriesHRecoilFactor = 0.35
-        entity.ExtraHitPerformScale = 20
-        if entity.AutoAimingConfig then
-            for _, range in ipairs({"OuterRange", "InnerRange"}) do
-                local cfg = entity.AutoAimingConfig[range]
-                if cfg then
-                    cfg.Speed = 4.3
-                    cfg.RangeRate = 3.9
-                    cfg.SpeedRate = 3.8
-                    cfg.RangeRateSight = 3.9
-                    cfg.SpeedRateSight = 3.8
-                    cfg.CrouchRate = 3.5
-                    cfg.ProneRate = 2.5
-                    cfg.DyingRate = 0
-                    cfg.adsorbMaxRange = 200
-                    cfg.adsorbMinRange = 20
-                    cfg.adsorbMinAttenuationDis = 100
-                    cfg.adsorbMaxAttenuationDis = 8000
-                    cfg.adsorbActiveMinRange = 20
-                end
-            end
-            entity.AutoAimingConfig = entity.AutoAimingConfig
-        end
-    end)
-end
-
-local function AttachAimbotTimer()
-    pcall(function()
-        local pc = slua_GameFrontendHUD:GetPlayerController()
-        if not isValid(pc) then return end
-        if pc == _G._AimbotCurrentPC then return end
-        _G._AimbotCurrentPC = pc
-        if pc.AddGameTimer then
-            pc:AddGameTimer(0.1, true, function()
-                if not isValid(_G._AimbotCurrentPC) then
-                    _G._AimbotCurrentPC = nil
-                    return
-                end
-                ApplyHardAimbot()
-            end)
-        end
-    end)
-end
-
-AttachAimbotTimer()
-
-pcall(function()
-    local pc = slua_GameFrontendHUD:GetPlayerController()
-    if isValid(pc) and pc.AddGameTimer then
-        pc:AddGameTimer(2.0, true, function()
-            if not isValid(_G._AimbotCurrentPC) then
-                _G._AimbotCurrentPC = nil
-                AttachAimbotTimer()
-            end
-        end)
-    end
-end)
 
 -- ==================== AKMOD EXTRA BYPASS ====================
 pcall(function()
@@ -1782,17 +1594,6 @@ pcall(function()
 
                 -- === FEATURES ===
                 {
-                    Key = "ModMenu_Aimbot",
-                    UI = AliasMap.Switcher,
-                    Text = "AIMBOT",
-                    GetFunc = function() return _G.Mod_Aimbot_Enabled or false end,
-                    SetFunc = function(_, value)
-                        _G.Mod_Aimbot_Enabled = value
-                        print("[MOD] AIMBOT: " .. (value and "ON ✓" or "OFF ✗"))
-                        return true
-                    end
-                },
-                {
                     Key = "ESP",
                     UI = AliasMap.Switcher,
                     Text = "WALL ESP",
@@ -1823,26 +1624,6 @@ pcall(function()
                         _G.Mod_FPS165_Enabled = value
                         if value then _G.Enable165FPSLogic() end
                         print("[MOD] 165 FPS: " .. (value and "ON ✓" or "OFF ✗"))
-                        return true
-                    end
-                },
-                {
-                    Key = "NoGrass",
-                    UI = AliasMap.Switcher,
-                    Text = "NO GRASS (Built-in)",
-                    GetFunc = function() return _G.Mod_NoGrass_Enabled ~= false end,
-                    SetFunc = function(_, value)
-                        _G.Mod_NoGrass_Enabled = value
-                        if value then
-                            pcall(function()
-                                local gi = slua_GameFrontendHUD and slua_GameFrontendHUD:GetGameInstance()
-                                if gi then
-                                    gi:ExecuteCMD("grass.DensityScale", "0")
-                                    gi:ExecuteCMD("grass.DiscardDataOnLoad", "1")
-                                end
-                            end)
-                        end
-                        print("[MOD] NO GRASS: " .. (value and "ON ✓" or "OFF ✗"))
                         return true
                     end
                 },
@@ -1881,17 +1662,6 @@ pcall(function()
                     SetFunc = function(ctrl, value)
                         _G.ESPConfig.RemoveFog = value
                         SetFogRemoval(value)
-                        return true
-                    end
-                },
-                {
-                    Key = "ESP_RemoveGrass",
-                    UI = AliasMap.TitleSwitcher,
-                    Text = "No Grass (Scene)",
-                    GetFunc = function() return _G.ESPConfig.RemoveGrass end,
-                    SetFunc = function(ctrl, value)
-                        _G.ESPConfig.RemoveGrass = value
-                        SetGrassRemoval(value)
                         return true
                     end
                 },
